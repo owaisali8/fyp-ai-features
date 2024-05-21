@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import List
 from meta_ai_api import MetaAI
 import requests
 import io
@@ -18,6 +19,7 @@ generation_config = {
   "max_output_tokens": 2048,
   "response_mime_type": "text/plain",
 }
+
 safety_settings = [
   {
     "category": "HARM_CATEGORY_HARASSMENT",
@@ -46,6 +48,11 @@ model = genai.GenerativeModel(
 class ProjectAssessmentBody(BaseModel):
     template_document_URL: str
     project_document_URL: str
+
+
+class SkillBasedMatchmakingBody(BaseModel):
+    students_skills: List[str]
+    project_skills: List[str]
 
 
 def download_and_get_text(req):
@@ -86,14 +93,12 @@ async def index(req: ProjectAssessmentBody):
 
     You are a Automated Project Assessment Tool, provide feedback to STUDENT SUBMISSION using the CRITERIA above.
     '''
-
         
     chat_session = model.start_chat(history=[])
 
     assessment_feedback = chat_session.send_message(assessment_criteria_prompt)
 
     return {"response": assessment_feedback.text}
-
 
 
 
@@ -105,6 +110,22 @@ async def index(req: ProjectAssessmentBody):
 @app.post("/questionizer")
 async def index(req: ProjectAssessmentBody):
     return req
+
+
+@app.post("/unique-idea-detection")
+async def index(req: ProjectAssessmentBody):
+    return req
+
+
+@app.post("/skill-based-matchmaking")
+async def index(req: SkillBasedMatchmakingBody):
+    students_skills = set(req.students_skills)
+    project_skills = set(req.project_skills)
+
+    required_skills = project_skills - students_skills
+
+    return {"response": required_skills}
+
 
 
 
