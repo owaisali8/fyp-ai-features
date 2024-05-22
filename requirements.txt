@@ -1,1 +1,1 @@
-fastapi[all]
+fastapi[all] meta_ai_api PyPDF2 python-dotenv google-generativeai langchain langchain-community

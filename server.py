@@ -66,6 +66,7 @@ class PredictiveSuccessAnalysisBody(BaseModel):
     students_skills: List[str]
     project_skills: List[str]
     project_description: str
+    project_title: str
     number_of_students: int
     student_academic_performance: List[str]
     project_document_URL: str
@@ -75,6 +76,10 @@ class QuestionizerBody(BaseModel):
     document_URL: str
     document_type: str
     question: str
+
+class UniqueIdeaDetectionBody(BaseModel):
+    project_title: str
+    project_abstract_description: str
 
 
 
@@ -199,7 +204,7 @@ async def index(req: QuestionizerBody):
 
 
 @app.post("/unique-idea-detection")
-async def index(req: ProjectAssessmentBody):
+async def index(req: UniqueIdeaDetectionBody):
     return req
 
 
