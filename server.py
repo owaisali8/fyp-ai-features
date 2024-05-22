@@ -127,7 +127,7 @@ async def index(req: ProjectAssessmentBody):
 
     ASSESSMENT CRITERIA:
 
-    {assessment_criteria['message']}
+    {assessment_criteria.text}
 
     You are a Automated Project Assessment Tool, provide feedback to STUDENT SUBMISSION using the CRITERIA above.
     '''
