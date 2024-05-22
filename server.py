@@ -114,7 +114,10 @@ async def index(req: ProjectAssessmentBody):
     
     You are a Automated Project Assessment Tool, create a summarized document from the above TEMPLATE that contains main points and criteria to assess a student's submission. Do not add points or marks.
     '''
-    assessment_criteria = ai.prompt(assessment_criteria_prompt)
+
+    chat_session = model.start_chat(history=[])
+
+    assessment_criteria = chat_session.send_message(assessment_criteria_prompt)
     
     text = download_and_get_text(req.project_document_URL)
     assessment_criteria_prompt = f'''
