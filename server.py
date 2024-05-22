@@ -145,19 +145,31 @@ async def index(req: PredictiveSuccessAnalysisBody):
     {req.number_of_students}
     STUDENT ACADEMIC PERFORMANCE:
     {req.student_academic_performance}
+    PROJECT PROPOSAL DOCUMENT:
+    {text}
+
+    Based on the above information, predict the success of the project. Suggest ways to enhance their project and what
+    skills they require to succeed including tech stack.
 
     '''
-    return req
+    
+    chat_session = model.start_chat(history=[])
+
+    assessment_feedback = chat_session.send_message(prompt)
+
+    return {"response": assessment_feedback.text}
 
 
 @app.post("/questionizer")
 async def index(req: QuestionizerBody):
     text = download_and_get_docs(req.document_URL)
+
     text_splitter = CharacterTextSplitter(
       separator = "\n",
       chunk_size = 200,
       chunk_overlap = 0
     )
+
     text_chunks = text_splitter.split_documents(text)
     model_name = "all-MiniLM-L6-v2.gguf2.f16.gguf"
     gpt4all_kwargs = {'allow_download': 'True'}
@@ -165,9 +177,11 @@ async def index(req: QuestionizerBody):
       model_name=model_name,
       gpt4all_kwargs=gpt4all_kwargs
     )
+
     db = FAISS.from_documents(text_chunks, embeddings)
     search_results = db.similarity_search(req.question, k=5)
     content = [res.page_content for res in search_results]
+
     prompt = f'''
     CONTENT:
     {content}
