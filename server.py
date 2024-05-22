@@ -8,6 +8,11 @@ import PyPDF2
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
+from pathlib import Path
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.embeddings import GPT4AllEmbeddings
+from langchain_community.vectorstores import FAISS
 
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
@@ -55,6 +60,20 @@ class SkillBasedMatchmakingBody(BaseModel):
     project_skills: List[str]
 
 
+class PredictiveSuccessAnalysisBody(BaseModel):
+    students_skills: List[str]
+    project_skills: List[str]
+    project_description: str
+    number_of_students: int
+    student_academic_performance: List[str]
+    project_document_URL: str
+
+class QuestionizerBody(BaseModel):
+    document_URL: str
+    question: str
+
+
+
 def download_and_get_text(req):
     r = requests.get(req)
     f = io.BytesIO(r.content)
@@ -62,6 +81,13 @@ def download_and_get_text(req):
     pages = reader.pages
     text = "".join([page.extract_text() for page in pages])
     return text
+
+def download_and_get_docs(req):
+    r = requests.get(req)
+    filename = Path('metadata.pdf')
+    filename.write_bytes(r.content)
+    loader = PyPDFLoader('metadata.pdf')
+    return loader.load()
 
 
 app = FastAPI()
@@ -103,13 +129,55 @@ async def index(req: ProjectAssessmentBody):
 
 
 @app.post("/predictive-success-analysis")
-async def index(req: ProjectAssessmentBody):
+async def index(req: PredictiveSuccessAnalysisBody):
+    students_skills = set(req.students_skills)
+    project_skills = set(req.project_skills)
+    text = download_and_get_text(req.project_document_URL)
+
+    prompt = f'''
+    PROJECT DESCRIPTION:
+    {req.project_description}
+    STUDENT SKILLS:
+    {students_skills}
+    PROJECT SKILLS:
+    {project_skills}
+    NUMBER OF STUDENTS:
+    {req.number_of_students}
+    STUDENT ACADEMIC PERFORMANCE:
+    {req.student_academic_performance}
+
+    '''
     return req
 
 
 @app.post("/questionizer")
-async def index(req: ProjectAssessmentBody):
-    return req
+async def index(req: QuestionizerBody):
+    text = download_and_get_docs(req.document_URL)
+    text_splitter = CharacterTextSplitter(
+      separator = "\n",
+      chunk_size = 200,
+      chunk_overlap = 0
+    )
+    text_chunks = text_splitter.split_documents(text)
+    model_name = "all-MiniLM-L6-v2.gguf2.f16.gguf"
+    gpt4all_kwargs = {'allow_download': 'True'}
+    embeddings = GPT4AllEmbeddings(
+      model_name=model_name,
+      gpt4all_kwargs=gpt4all_kwargs
+    )
+    db = FAISS.from_documents(text_chunks, embeddings)
+    search_results = db.similarity_search(req.question, k=5)
+    content = [res.page_content for res in search_results]
+    prompt = f'''
+    CONTENT:
+    {content}
+
+    Based on the CONTENT above,  answer the QUESTION below.
+    QUESTION: {req.question}
+    '''
+    
+    res = ai.prompt(prompt)
+    return {"response": res['message']}
 
 
 @app.post("/unique-idea-detection")
