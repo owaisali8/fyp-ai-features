@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.embeddings import GPT4AllEmbeddings
+from langchain_community.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain_community.vectorstores import FAISS
 
 load_dotenv()
@@ -183,12 +183,7 @@ async def index(req: QuestionizerBody):
     )
 
     text_chunks = text_splitter.split_documents(text)
-    model_name = "all-MiniLM-L6-v2.gguf2.f16.gguf"
-    gpt4all_kwargs = {'allow_download': 'True'}
-    embeddings = GPT4AllEmbeddings(
-      model_name=model_name,
-      gpt4all_kwargs=gpt4all_kwargs
-    )
+    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 
     db = FAISS.from_documents(text_chunks, embeddings)
     search_results = db.similarity_search(req.question, k=5)

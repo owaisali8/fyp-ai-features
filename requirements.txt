@@ -7,4 +7,4 @@ langchain
 langchain-community
 pypdf
 faiss-cpu
-gpt4all
+sentence-transformers
