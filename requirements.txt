@@ -1,5 +1,4 @@
-fastapi[all] 
-meta_ai_api 
+fastapi[all]  
 PyPDF2 
 python-dotenv 
 google-generativeai 

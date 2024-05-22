@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
-from meta_ai_api import MetaAI
 import requests
 import io
 import PyPDF2
@@ -100,7 +99,7 @@ def download_and_get_docs(req):
 
 
 app = FastAPI()
-ai = MetaAI()
+
 
 @app.post("/automated-project-assessment")
 async def index(req: ProjectAssessmentBody):
@@ -196,9 +195,10 @@ async def index(req: QuestionizerBody):
     Based on the CONTENT above,  answer the QUESTION below.
     QUESTION: {req.question}
     '''
-    
-    res = ai.prompt(prompt)
-    return {"response": res['message']}
+    chat_session = model.start_chat(history=[])
+
+    res = chat_session.send_message(prompt)
+    return {"response": res.text}
 
 
 @app.post("/unique-idea-detection")
