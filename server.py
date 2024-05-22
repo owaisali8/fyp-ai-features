@@ -52,7 +52,9 @@ model = genai.GenerativeModel(
 
 class ProjectAssessmentBody(BaseModel):
     template_document_URL: str
+    template_document_type: str
     project_document_URL: str
+    project_document_type: str
 
 
 class SkillBasedMatchmakingBody(BaseModel):
@@ -67,9 +69,11 @@ class PredictiveSuccessAnalysisBody(BaseModel):
     number_of_students: int
     student_academic_performance: List[str]
     project_document_URL: str
+    project_document_type: str
 
 class QuestionizerBody(BaseModel):
     document_URL: str
+    document_type: str
     question: str
 
 
