@@ -12,9 +12,20 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
+from zipfile import ZipFile
+import gdown
 
 load_dotenv()
+vectorDB_download_url = os.environ.get("VECTORDB_DOWNLOAD_URL")
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+
+if not os.path.exists('./content/vectorDB/'):
+  print("Downloading the vector database")
+  gdown.download(vectorDB_download_url, 'vectorDB.zip', quiet=False)
+  with ZipFile('vectorDB.zip', 'r') as zip_ref:
+      zip_ref.extractall()
+  os.remove('vectorDB.zip')
 
 generation_config = {
   "temperature": 0.9,
@@ -81,7 +92,6 @@ class UniqueIdeaDetectionBody(BaseModel):
     project_abstract_description: str
 
 
-
 def download_and_get_text(req):
     r = requests.get(req)
     f = io.BytesIO(r.content)
@@ -99,7 +109,6 @@ def download_and_get_docs(req):
 
 
 app = FastAPI()
-
 
 @app.post("/automated-project-assessment")
 async def index(req: ProjectAssessmentBody):
@@ -203,7 +212,31 @@ async def index(req: QuestionizerBody):
 
 @app.post("/unique-idea-detection")
 async def index(req: UniqueIdeaDetectionBody):
-    return req
+  embeddings = FastEmbedEmbeddings()   
+  db = FAISS.load_local("./content/vectorDB", embeddings, allow_dangerous_deserialization=True)
+  #Combine the project title and abstract description
+  combined_text = req.project_title + "\n" + req.project_abstract_description
+
+  results= db.similarity_search(combined_text, k=10)
+  top_5 = results[:5]
+  top_5 = "\n".join([f"PROJECT: {res.page_content} METADATA: {res.metadata}" for res in top_5])
+
+  prompt = f'''
+      {top_5}
+
+      Based on the TOP SIMILAR PROJECTS above, compare the current student project 
+      {req.project_title} 
+      {req.project_abstract_description}
+      with the existing projects. Provide feedback on the uniqueness of the project and mention if there are any similarities along with the source.
+  '''
+
+  chat_session = model.start_chat(history=[])
+  res = chat_session.send_message(prompt)
+
+  return {
+      "top_results": top_5,
+      "analysis": res.text
+  }
 
 
 @app.post("/skill-based-matchmaking")
@@ -216,5 +249,8 @@ async def index(req: SkillBasedMatchmakingBody):
     return {"response": required_skills}
 
 
+@app.get("/")
+async def index():
+    return "Docs Path: /docs"   
 
 
