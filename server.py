@@ -14,6 +14,7 @@ from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
 from zipfile import ZipFile
 import gdown
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 vectorDB_download_url = os.environ.get("VECTORDB_DOWNLOAD_URL")
@@ -109,6 +110,16 @@ def download_and_get_docs(req):
 
 
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/automated-project-assessment")
 async def index(req: ProjectAssessmentBody):
