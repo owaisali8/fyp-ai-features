@@ -230,7 +230,7 @@ async def index(req: UniqueIdeaDetectionBody):
 
   results= db.similarity_search(combined_text, k=10)
   top_5 = results[:5]
-  top_5 = "\n".join([f"PROJECT: {res.page_content} METADATA: {res.metadata}" for res in top_5])
+  top_5 = "\n\n".join([f"PROJECT: {res.page_content}" for res in top_5])
 
   prompt = f'''
       {top_5}
